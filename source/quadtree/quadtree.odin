@@ -15,6 +15,15 @@ Box :: struct {
 	h:        f32,
 }
 
+collides_with :: proc(a: Box, b: Box) -> bool {
+	return(
+		a.position.x < b.position.x + b.w &&
+		a.position.x + a.w > b.position.x &&
+		a.position.y < b.position.y + b.h &&
+		a.position.y + a.h > b.position.y \
+	)
+}
+
 Quad :: struct {
 	position: raylib.Vector2,
 	w:        f32,
@@ -23,7 +32,7 @@ Quad :: struct {
 }
 
 Leaf :: struct {
-	nodes: small_array.Small_Array(36, Box),
+	nodes: small_array.Small_Array(16, Box),
 }
 
 Quad_Tree :: union {
@@ -126,6 +135,9 @@ insert_into_quad_tree :: proc(tree: ^Quad_Tree, node: Box) {
 			insert_into_quad_tree(&child, node)
 		}
 	case Leaf:
+		if v.nodes.len == 16 {
+			panic("Leaf node is full")
+		}
 		small_array.push(&v.nodes, node)
 	}
 }
@@ -141,7 +153,7 @@ free_quad_tree :: proc(tree: ^Quad_Tree) {
 	}
 }
 
-MIN_GRID_SIZE :: 64
+MIN_GRID_SIZE :: 32
 
 new_quad_tree :: proc(
 	size: u32,
@@ -158,7 +170,7 @@ new_quad_tree :: proc(
 
 	if size == MIN_GRID_SIZE {
 		leaf := Leaf{}
-		leaf.nodes = small_array.Small_Array(36, Box){}
+		leaf.nodes = small_array.Small_Array(16, Box){}
 
 		return leaf
 	}

@@ -155,12 +155,12 @@ update :: proc() {
 		delta = 2
 	}
 
-
 	system.run_velocity_system(delta, world.velocity[:], world.position[:])
+	system.run_movement_command_system(world.movement_command[:], world.position[:])
 	system.run_player_controls_system(
 		controls,
-		world.sprite[:],
-		world.velocity[:],
+		static_collisions,
+		world.position[:],
 		world.is_player[:],
 		world.collision_box[:],
 	)
@@ -168,7 +168,7 @@ update :: proc() {
 	system.run_camera_follow_system(&camera, world.is_player[:], world.position[:])
 
 	raylib.BeginDrawing()
-	raylib.ClearBackground({194, 227, 232, 255})
+	raylib.ClearBackground({36, 36, 36, 255})
 
 	raylib.BeginMode2D(camera)
 
