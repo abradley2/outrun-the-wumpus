@@ -1,0 +1,4 @@
+[*.odin]
+indent_style = tab
+indent_size = 3
+column_limit = 120
