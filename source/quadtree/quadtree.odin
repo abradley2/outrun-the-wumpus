@@ -11,10 +11,11 @@ import "vendor:raylib"
 tile_size :: 18
 
 Box :: struct {
-	position:   raylib.Vector2,
-	w:          f32,
-	h:          f32,
-	sprite_ref: Maybe(^component.Sprite),
+	position:     raylib.Vector2,
+	w:            f32,
+	h:            f32,
+	is_collision: bool,
+	sprite_ref:   Maybe(^component.Sprite),
 }
 
 collides_with_any :: proc(a: Box, boxes: []Box) -> bool {
@@ -43,7 +44,7 @@ Quad :: struct {
 }
 
 Leaf :: struct {
-	nodes: small_array.Small_Array(16, Box),
+	nodes: small_array.Small_Array(32, Box),
 }
 
 Quad_Tree :: union {
@@ -146,7 +147,7 @@ insert_into_quad_tree :: proc(tree: ^Quad_Tree, node: Box) {
 			insert_into_quad_tree(&child, node)
 		}
 	case Leaf:
-		if v.nodes.len == 16 {
+		if v.nodes.len == 32 {
 			panic("Leaf node is full")
 		}
 		small_array.push(&v.nodes, node)
@@ -181,7 +182,7 @@ new_quad_tree :: proc(
 
 	if size == MIN_GRID_SIZE {
 		leaf := Leaf{}
-		leaf.nodes = small_array.Small_Array(16, Box){}
+		leaf.nodes = small_array.Small_Array(32, Box){}
 
 		return leaf
 	}

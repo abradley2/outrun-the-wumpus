@@ -204,24 +204,39 @@ _populate_world :: proc(
 				continue
 			}
 
-
 			append(sprite_group.sprites, sprite)
+			inserted_sprite := &sprite_group.sprites[len(sprite_group.sprites) - 1]
 
+			is_collision := false
 			for custom_property in small_array.slice(&properties) {
 				#partial switch property in custom_property {
 				case tiled.Collision_Box:
 					static_collision_box := quadtree.Box {
-						position   = raylib.Vector2 {
+						position     = raylib.Vector2 {
 							layer_position[0],
 							layer_position[1],
 						} + raylib.Vector2{dst_offset[0], dst_offset[1]},
-						w          = sprite.dst_width,
-						h          = sprite.dst_height,
-						sprite_ref = &sprite_group.sprites[len(sprite_group.sprites) - 1],
+						w            = sprite.dst_width,
+						h            = sprite.dst_height,
+						is_collision = true,
+						sprite_ref   = inserted_sprite,
 					}
+					is_collision = true
 					quadtree.insert_into_quad_tree(static_collisions, static_collision_box)
 				}
 			}
+
+			quadtree.insert_into_quad_tree(
+				sprite_quad_tree,
+				quadtree.Box {
+					position = raylib.Vector2{layer_position[0], layer_position[1]} +
+					raylib.Vector2{dst_offset[0], dst_offset[1]},
+					w = sprite.dst_width,
+					h = sprite.dst_height,
+					is_collision = is_collision,
+					sprite_ref = inserted_sprite,
+				},
+			)
 		}
 	}
 }
