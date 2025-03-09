@@ -1,5 +1,6 @@
 package quadtree
 
+import "../component"
 import "core:container/small_array"
 import "core:fmt"
 import "core:log"
@@ -10,9 +11,19 @@ import "vendor:raylib"
 tile_size :: 18
 
 Box :: struct {
-	position: raylib.Vector2,
-	w:        f32,
-	h:        f32,
+	position:   raylib.Vector2,
+	w:          f32,
+	h:          f32,
+	sprite_ref: Maybe(^component.Sprite),
+}
+
+collides_with_any :: proc(a: Box, boxes: []Box) -> bool {
+	for box in boxes {
+		if collides_with(a, box) {
+			return true
+		}
+	}
+	return false
 }
 
 collides_with :: proc(a: Box, b: Box) -> bool {

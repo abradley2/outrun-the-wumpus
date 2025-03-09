@@ -10,4 +10,5 @@ Sprite :: struct {
 	dst_width:  f32,
 	dst_height: f32,
 	flipped:    bool,
+	dimmed:     Maybe(u8),
 }

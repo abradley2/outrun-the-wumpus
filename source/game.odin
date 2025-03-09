@@ -57,6 +57,7 @@ Scene_Error :: struct {}
 Scene_Loaded :: struct {
 	map_id:            tiled.Map_Id,
 	static_collisions: ^quadtree.Quad_Tree,
+	sprite_quad_tree:  ^quadtree.Quad_Tree,
 }
 
 Scene_State :: union {
@@ -76,16 +77,20 @@ run_scene_state :: proc(
 		if s, scene_loaded := state.(Scene_Loaded); scene_loaded {
 			quadtree.free_quad_tree(s.static_collisions)
 			free(s.static_collisions)
+			quadtree.free_quad_tree(s.sprite_quad_tree)
+			free(s.sprite_quad_tree)
 		}
 		return
 	}
 
 	switch v in state {
 	case nil:
-		if world_static_collisions, ok := load_world(map_id, w, entity_pool); ok {
+		if world_static_collisions, sprite_quad_tree, ok := load_world(map_id, w, entity_pool);
+		   ok {
 			state^ = Scene_Loaded {
 				map_id            = map_id,
 				static_collisions = world_static_collisions,
+				sprite_quad_tree  = sprite_quad_tree,
 			}
 		} else {
 			state^ = Scene_Error{}
@@ -95,11 +100,18 @@ run_scene_state :: proc(
 		if v.map_id != map_id {
 			quadtree.free_quad_tree(v.static_collisions)
 			free(v.static_collisions)
+			quadtree.free_quad_tree(v.sprite_quad_tree)
+			free(v.sprite_quad_tree)
 
-			if world_static_collisions, ok := load_world(v.map_id, w, entity_pool); ok {
+			if world_static_collisions, sprite_quad_tree, ok := load_world(
+				v.map_id,
+				w,
+				entity_pool,
+			); ok {
 				state^ = Scene_Loaded {
 					map_id            = v.map_id,
 					static_collisions = world_static_collisions,
+					sprite_quad_tree  = sprite_quad_tree,
 				}
 			} else {
 				state^ = Scene_Error{}
@@ -149,10 +161,10 @@ update :: proc() {
 	_ = static_collisions
 
 	controls := controls.run_keyboard_inputs()
-	delta := raylib.GetFrameTime() / 0.01666
+	delta := raylib.GetFrameTime() / 0.017
 	fmt.printf("delta: %f\n", delta)
-	if delta > 2 {
-		delta = 2
+	if delta > 1.9 {
+		delta = 1.9
 	}
 
 	system.run_velocity_system(delta, world.velocity[:], world.position[:])
@@ -164,6 +176,7 @@ update :: proc() {
 		world.is_player[:],
 		world.collision_box[:],
 	)
+	system.run_lighting_system(world.light_source[:], world.position[:], world.sprite_group[:])
 	system.run_animation_system(delta, world.sprite[:], world.animation_frames[:])
 	system.run_camera_follow_system(&camera, world.is_player[:], world.position[:])
 
@@ -237,6 +250,11 @@ render_sprite :: proc(position: raylib.Vector3, sprite: component.Sprite) -> (di
 	}
 
 	raylib.DrawTexturePro(texture, src_rect, dst_rect, {0, 0}, 0, raylib.WHITE)
+
+	if dim_level, has_dim_level := sprite.dimmed.?; has_dim_level {
+		raylib.DrawRectangleRec(dst_rect, raylib.Color{32, 32, 32, dim_level})
+	}
+
 	did_render = true
 	return
 }

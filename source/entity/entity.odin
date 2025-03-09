@@ -17,4 +17,5 @@ Entity :: struct {
 	is_player:        Maybe(component.Is_Player),
 	animation_frames: Maybe(component.Animation_Frames),
 	movement_command: Maybe(component.Movement_Command),
+	light_source:     Maybe(component.Light_Source),
 }

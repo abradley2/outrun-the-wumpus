@@ -7,7 +7,7 @@ import "core:testing"
 _quad_tree_test :: proc(t: ^testing.T) {
 	static_collisions := new_quad_tree(1024)
 
-	insert_into_quad_tree(&static_collisions, Box{{0, 0}, 18, 18})
+	insert_into_quad_tree(&static_collisions, Box{{0, 0}, 18, 18, nil})
 
 	// log_indented_quad_tree(&static_collisions)
 

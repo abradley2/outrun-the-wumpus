@@ -17,11 +17,13 @@ _load_map_test :: proc(t: ^testing.T) {
 		defer free(w, context.allocator)
 
 		tile_map_id, _ := reflect.enum_from_name(tiled.Map_Id, id)
-		static_collisions, ok := load_world(tile_map_id, w, entity_pool)
+		static_collisions, sprite_quad_tree, ok := load_world(tile_map_id, w, entity_pool)
 		testing.expect(t, ok)
 		free_all(context.temp_allocator)
 		quadtree.free_quad_tree(static_collisions)
 		free(static_collisions)
+		quadtree.free_quad_tree(sprite_quad_tree)
+		free(sprite_quad_tree)
 	}
 
 	entity.free_pool(entity_pool)

@@ -25,6 +25,8 @@ check_spawn :: proc(
 
 			world.position[player_entity_ref.local_id] = position + raylib.Vector3{0, -16, 0}
 
+			world.light_source[player_entity_ref.local_id] = component.Light_Source{}
+
 			world.velocity[player_entity_ref.local_id] = raylib.Vector2{0, 0}
 			world.collision_box[player_entity_ref.local_id] = component.Collision_Box {
 				offset = raylib.Vector2{0, 0},
