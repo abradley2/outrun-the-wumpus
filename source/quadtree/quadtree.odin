@@ -11,11 +11,12 @@ import "vendor:raylib"
 tile_size :: 18
 
 Box :: struct {
-	position:     raylib.Vector2,
-	w:            f32,
-	h:            f32,
-	is_collision: bool,
-	sprite_ref:   Maybe(^component.Sprite),
+	position:         raylib.Vector2,
+	w:                f32,
+	h:                f32,
+	is_collision:     bool,
+	sprite_group_ref: ^[dynamic]component.Sprite,
+	sprite_idx:       int,
 }
 
 collides_with_any :: proc(a: Box, boxes: []Box) -> bool {

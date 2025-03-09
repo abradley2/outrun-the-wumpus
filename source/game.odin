@@ -158,11 +158,10 @@ update :: proc() {
 	}
 
 	static_collisions := loaded_scene.static_collisions
-	_ = static_collisions
+	sprite_quad_tree := loaded_scene.sprite_quad_tree
 
 	controls := controls.run_keyboard_inputs()
 	delta := raylib.GetFrameTime() / 0.017
-	fmt.printf("delta: %f\n", delta)
 	if delta > 1.9 {
 		delta = 1.9
 	}
@@ -176,7 +175,12 @@ update :: proc() {
 		world.is_player[:],
 		world.collision_box[:],
 	)
-	system.run_lighting_system(world.light_source[:], world.position[:], world.sprite_group[:])
+	system.run_lighting_system(
+		sprite_quad_tree,
+		world.light_source[:],
+		world.position[:],
+		world.sprite_group[:],
+	)
 	system.run_animation_system(delta, world.sprite[:], world.animation_frames[:])
 	system.run_camera_follow_system(&camera, world.is_player[:], world.position[:])
 
@@ -252,6 +256,12 @@ render_sprite :: proc(position: raylib.Vector3, sprite: component.Sprite) -> (di
 	raylib.DrawTexturePro(texture, src_rect, dst_rect, {0, 0}, 0, raylib.WHITE)
 
 	if dim_level, has_dim_level := sprite.dimmed.?; has_dim_level {
+		if dim_level == 69 {
+			fmt.printf("Found 420 69\n")
+		}
+		// if dim_level == 180 {
+		// 	fmt.printf("Found dimmed tile\n")
+		// }
 		raylib.DrawRectangleRec(dst_rect, raylib.Color{32, 32, 32, dim_level})
 	}
 

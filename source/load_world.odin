@@ -190,7 +190,7 @@ _populate_world :: proc(
 				dst_offset = dst_offset,
 				dst_width  = f32(tile_set.tile_width),
 				dst_height = f32(tile_set.tile_height),
-				dimmed     = 0,
+				dimmed     = 77,
 			}
 
 			did_spawn := entity.check_spawn(
@@ -205,21 +205,21 @@ _populate_world :: proc(
 			}
 
 			append(sprite_group.sprites, sprite)
-			inserted_sprite := &sprite_group.sprites[len(sprite_group.sprites) - 1]
 
 			is_collision := false
 			for custom_property in small_array.slice(&properties) {
 				#partial switch property in custom_property {
 				case tiled.Collision_Box:
 					static_collision_box := quadtree.Box {
-						position     = raylib.Vector2 {
+						position         = raylib.Vector2 {
 							layer_position[0],
 							layer_position[1],
 						} + raylib.Vector2{dst_offset[0], dst_offset[1]},
-						w            = sprite.dst_width,
-						h            = sprite.dst_height,
-						is_collision = true,
-						sprite_ref   = inserted_sprite,
+						w                = sprite.dst_width,
+						h                = sprite.dst_height,
+						is_collision     = true,
+						sprite_group_ref = sprite_group.sprites,
+						sprite_idx       = len(sprite_group.sprites) - 1,
 					}
 					is_collision = true
 					quadtree.insert_into_quad_tree(static_collisions, static_collision_box)
@@ -234,7 +234,8 @@ _populate_world :: proc(
 					w = sprite.dst_width,
 					h = sprite.dst_height,
 					is_collision = is_collision,
-					sprite_ref = inserted_sprite,
+					sprite_group_ref = sprite_group.sprites,
+					sprite_idx = len(sprite_group.sprites) - 1,
 				},
 			)
 		}
