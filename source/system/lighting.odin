@@ -1,5 +1,4 @@
 package system
-import "core:fmt"
 
 import "../component"
 import "../entity"
@@ -48,63 +47,51 @@ run_lighting_system :: proc(
 	}
 }
 
+Light_Box :: struct {
+	distance: int,
+	box:      quadtree.Box,
+}
+
 illuminate_squares :: proc(
 	light_source: quadtree.Box,
 	collision_quad_tree: ^quadtree.Quad_Tree,
 	shadow_quad_tree: ^quadtree.Quad_Tree,
 ) {
-	big_light_source_box := quadtree.Box {
-		position = light_source.position - raylib.Vector2{16 * 6, light_source.h * 16 * 6},
-		w        = light_source.w + (16 * 6 * 2),
-		h        = light_source.h + (16 * 6 * 2),
-	}
+
 	small_light_source_box := quadtree.Box {
 		position = light_source.position,
 		w        = 16,
 		h        = 16,
 	}
-	_ = small_light_source_box
-	_ = big_light_source_box
 
 	collision_tiles := make([dynamic]quadtree.Box, 0, 9, allocator = context.temp_allocator)
 	shadow_tiles := make([dynamic]quadtree.Box, 0, 9, allocator = context.temp_allocator)
 
-	stack: small_array.Small_Array(128, quadtree.Box)
-	small_array.append(&stack, light_source)
+	stack: small_array.Small_Array(128, Light_Box)
+	small_array.append(&stack, Light_Box{distance = 0, box = small_light_source_box})
 
-	_ = collision_tiles
-	_ = shadow_tiles
-	_ = stack
 
 	touched_tiles := make(map[quadtree.Box]bool, allocator = context.temp_allocator)
 
+	max_distance := 8
 
 	for stack.len > 0 {
 		node := small_array.pop_front(&stack)
 
-		touched_tiles[node] = true
+		touched_tiles[node.box] = true
 
-		manhatten_distance :=
-			abs(node.position.x - light_source.position.x) +
-			abs(node.position.y - light_source.position.y)
-
-		manhatten_distance_squares := manhatten_distance / 14
-
-
-		if manhatten_distance_squares > 14 {
-			break
+		if node.distance > max_distance {
+			continue
 		}
 
 		did_collide: bool
 
-		shadow_nearby := quadtree.get_collisions_for(shadow_quad_tree, &shadow_tiles, node)
-
+		shadow_nearby := quadtree.get_collisions_for(shadow_quad_tree, &shadow_tiles, node.box)
 
 		for &shadow_tile in small_array.slice(&shadow_nearby) {
 			shadow_tile.sprite_group_ref[shadow_tile.sprite_idx].dimmed = u8(
-				255 * (manhatten_distance_squares / 14),
+				255 * (f32(node.distance) / f32(max_distance)),
 			)
-
 
 			collisions_nearby := quadtree.get_collisions_for(
 				collision_quad_tree,
@@ -121,46 +108,44 @@ illuminate_squares :: proc(
 
 		// append up, down, left, right
 		next_left := quadtree.Box {
-			position = raylib.Vector2{node.position.x, node.position.y - 16},
+			position = raylib.Vector2{node.box.position.x, node.box.position.y - 16},
 			w        = 16,
 			h        = 16,
 		}
 		if _, ok := touched_tiles[next_left]; !ok {
-			small_array.append(&stack, next_left)
+			small_array.append(&stack, Light_Box{distance = node.distance + 1, box = next_left})
 			touched_tiles[next_left] = true
 		}
 
 		next_right := quadtree.Box {
-			position = raylib.Vector2{node.position.x, node.position.y + 16},
+			position = raylib.Vector2{node.box.position.x, node.box.position.y + 16},
 			w        = 16,
 			h        = 16,
 		}
 		if _, ok := touched_tiles[next_right]; !ok {
-			small_array.append(&stack, next_right)
+			small_array.append(&stack, Light_Box{distance = node.distance + 1, box = next_right})
 			touched_tiles[next_right] = true
 		}
 
 		next_up := quadtree.Box {
-			position = raylib.Vector2{node.position.x - 16, node.position.y},
+			position = raylib.Vector2{node.box.position.x - 16, node.box.position.y},
 			w        = 16,
 			h        = 16,
 		}
 		if _, ok := touched_tiles[next_up]; !ok {
-			small_array.append(&stack, next_up)
+			small_array.append(&stack, Light_Box{distance = node.distance + 1, box = next_up})
 			touched_tiles[next_up] = true
 		}
 
 		next_down := quadtree.Box {
-			position = raylib.Vector2{node.position.x + 16, node.position.y},
+			position = raylib.Vector2{node.box.position.x + 16, node.box.position.y},
 			w        = 16,
 			h        = 16,
 		}
 		if _, ok := touched_tiles[next_down]; !ok {
-			small_array.append(&stack, next_down)
+			small_array.append(&stack, Light_Box{distance = node.distance + 1, box = next_down})
 			touched_tiles[next_down] = true
 		}
-
-
 	}
 
 
