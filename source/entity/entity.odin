@@ -18,4 +18,6 @@ Entity :: struct {
 	animation_frames: Maybe(component.Animation_Frames),
 	movement_command: Maybe(component.Movement_Command),
 	light_source:     Maybe(component.Light_Source),
+	is_wumpus:        Maybe(component.Is_Wumpus),
+	is_shadow_layer:  Maybe(component.Is_Shadow_Layer),
 }

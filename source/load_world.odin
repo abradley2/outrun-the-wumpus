@@ -12,6 +12,64 @@ import "core:path/slashpath"
 import "core:strings"
 import "vendor:raylib"
 
+load_dark_layer :: proc(
+	world: ^World,
+	entity_pool: ^entity.Pool,
+) -> (
+	dark_tile_quad_tree: ^quadtree.Quad_Tree,
+) {
+	dark_tile_quad_tree = new(quadtree.Quad_Tree)
+	dark_tile_quad_tree^ = quadtree.new_quad_tree(1024)
+
+	dark_tile_sprite_group_ref := entity.alloc_entity(entity_pool, true)
+	sprite_group := entity.alloc_sprite_vector(entity_pool, dark_tile_sprite_group_ref.local_id)
+
+	world.position[dark_tile_sprite_group_ref.local_id] = component.Position{0, 0, 99}
+
+	world.sprite_group[dark_tile_sprite_group_ref.local_id] = component.Sprite_Group {
+		sprites = sprite_group,
+	}
+
+	x: f32
+	y: f32
+
+	for x < 1024 {
+		defer {
+			x += 16
+		}
+		for y < 1024 {
+			defer {
+				y += 16
+			}
+			sprite := component.Sprite {
+				texture_id = texture.Texture_Id.Missing,
+				src_rect   = raylib.Rectangle{},
+				dst_offset = raylib.Vector2{x, y},
+				dst_width  = 16,
+				dst_height = 16,
+				dimmed     = 255,
+			}
+
+			append(sprite_group, sprite)
+
+			quadtree.insert_into_quad_tree(
+				dark_tile_quad_tree,
+				quadtree.Box {
+					position = raylib.Vector2{x, y},
+					w = 16,
+					h = 16,
+					is_collision = false,
+					sprite_group_ref = sprite_group,
+					sprite_idx = len(sprite_group) - 1,
+				},
+			)
+
+		}
+	}
+
+	return
+}
+
 load_world :: proc(
 	map_id: tiled.Map_Id,
 	world: ^World,

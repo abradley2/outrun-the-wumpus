@@ -427,6 +427,15 @@
                  "type":"bool",
                  "value":false
                 }]
+        }, 
+        {
+         "id":110,
+         "properties":[
+                {
+                 "name":"spawn_for",
+                 "type":"string",
+                 "value":"wumpus"
+                }]
         }],
  "tilewidth":16,
  "type":"tileset",

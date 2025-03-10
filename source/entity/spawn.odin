@@ -16,6 +16,26 @@ check_spawn :: proc(
 ) {
 	for custom_property in custom_properties {
 		#partial switch property in custom_property {
+		case tiled.Wumpus_Spawn:
+			did_spawn = true
+
+			wumpus_entity_ref := alloc_entity(entity_pool, true)
+
+			world.is_wumpus[wumpus_entity_ref.local_id] = component.Is_Wumpus{}
+
+			world.position[wumpus_entity_ref.local_id] = position
+
+			world.sprite[wumpus_entity_ref.local_id] = component.Sprite {
+				texture_id = texture.Texture_Id.Tile_Map_Packed,
+				src_rect   = raylib.Rectangle{32, 144, 16, 16},
+				dst_offset = {0, 0},
+				dst_width  = 16,
+				dst_height = 16,
+			}
+
+			world.velocity[wumpus_entity_ref.local_id] = raylib.Vector2{0, 0}
+
+
 		case tiled.Player_Spawn:
 			did_spawn = true
 
@@ -23,7 +43,7 @@ check_spawn :: proc(
 
 			world.is_player[player_entity_ref.local_id] = component.Is_Player{}
 
-			world.position[player_entity_ref.local_id] = position + raylib.Vector3{0, -16, 0}
+			world.position[player_entity_ref.local_id] = position
 
 			world.light_source[player_entity_ref.local_id] = component.Light_Source{}
 

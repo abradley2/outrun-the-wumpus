@@ -2,9 +2,7 @@ package controls
 
 import "vendor:raylib"
 
-
 run_keyboard_inputs :: proc() -> Controls {
-
 	left_just_pressed := raylib.IsKeyPressed(raylib.KeyboardKey.LEFT)
 	right_just_pressed := raylib.IsKeyPressed(raylib.KeyboardKey.RIGHT)
 	up_just_pressed := raylib.IsKeyPressed(raylib.KeyboardKey.UP)

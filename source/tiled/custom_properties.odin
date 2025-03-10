@@ -2,6 +2,8 @@ package tiled
 
 Player_Spawn :: struct {}
 
+Wumpus_Spawn :: struct {}
+
 Collision_Box :: struct {}
 
 Visible :: struct {
@@ -17,6 +19,7 @@ Custom_Tile_Property :: struct {
 Custom_Property :: union {
 	Visible,
 	Player_Spawn,
+	Wumpus_Spawn,
 	Collision_Box,
 }
 
@@ -62,6 +65,8 @@ custom_property_from_raw :: proc(
 			switch val {
 			case "player":
 				custom_property = Player_Spawn{}
+			case "wumpus":
+				custom_property = Wumpus_Spawn{}
 			case:
 				return
 			}
