@@ -55,9 +55,9 @@ init :: proc() {
 Scene_Error :: struct {}
 
 Scene_Loaded :: struct {
-	map_id:            tiled.Map_Id,
-	static_collisions: ^quadtree.Quad_Tree,
-	sprite_quad_tree:  ^quadtree.Quad_Tree,
+	map_id:              tiled.Map_Id,
+	static_collisions:   ^quadtree.Quad_Tree,
+	dark_tile_quad_tree: ^quadtree.Quad_Tree,
 }
 
 Scene_State :: union {
@@ -77,20 +77,20 @@ run_scene_state :: proc(
 		if s, scene_loaded := state.(Scene_Loaded); scene_loaded {
 			quadtree.free_quad_tree(s.static_collisions)
 			free(s.static_collisions)
-			quadtree.free_quad_tree(s.sprite_quad_tree)
-			free(s.sprite_quad_tree)
+			quadtree.free_quad_tree(s.dark_tile_quad_tree)
+			free(s.dark_tile_quad_tree)
 		}
 		return
 	}
 
 	switch v in state {
 	case nil:
-		if world_static_collisions, sprite_quad_tree, ok := load_world(map_id, w, entity_pool);
+		if world_static_collisions, dark_tile_quad_tree, ok := load_world(map_id, w, entity_pool);
 		   ok {
 			state^ = Scene_Loaded {
-				map_id            = map_id,
-				static_collisions = world_static_collisions,
-				sprite_quad_tree  = sprite_quad_tree,
+				map_id              = map_id,
+				static_collisions   = world_static_collisions,
+				dark_tile_quad_tree = dark_tile_quad_tree,
 			}
 		} else {
 			state^ = Scene_Error{}
@@ -100,18 +100,18 @@ run_scene_state :: proc(
 		if v.map_id != map_id {
 			quadtree.free_quad_tree(v.static_collisions)
 			free(v.static_collisions)
-			quadtree.free_quad_tree(v.sprite_quad_tree)
-			free(v.sprite_quad_tree)
+			quadtree.free_quad_tree(v.dark_tile_quad_tree)
+			free(v.dark_tile_quad_tree)
 
-			if world_static_collisions, sprite_quad_tree, ok := load_world(
+			if world_static_collisions, dark_tile_quad_tree, ok := load_world(
 				v.map_id,
 				w,
 				entity_pool,
 			); ok {
 				state^ = Scene_Loaded {
-					map_id            = v.map_id,
-					static_collisions = world_static_collisions,
-					sprite_quad_tree  = sprite_quad_tree,
+					map_id              = v.map_id,
+					static_collisions   = world_static_collisions,
+					dark_tile_quad_tree = dark_tile_quad_tree,
 				}
 			} else {
 				state^ = Scene_Error{}
@@ -158,7 +158,7 @@ update :: proc() {
 	}
 
 	static_collisions := loaded_scene.static_collisions
-	sprite_quad_tree := loaded_scene.sprite_quad_tree
+	dark_tile_quad_tree := loaded_scene.dark_tile_quad_tree
 
 	controls := controls.run_keyboard_inputs()
 	delta := raylib.GetFrameTime() / 0.017
@@ -176,7 +176,9 @@ update :: proc() {
 		world.collision_box[:],
 	)
 	system.run_lighting_system(
-		sprite_quad_tree,
+		static_collisions,
+		dark_tile_quad_tree,
+		world.is_shadow_layer[:],
 		world.light_source[:],
 		world.position[:],
 		world.sprite_group[:],
@@ -196,6 +198,10 @@ update :: proc() {
 			sprite_group, has_sprite_group := world.sprite_group[entity_id].?
 
 			if has_sprite_group {
+				_, is_darkness_group := world.is_shadow_layer[entity_id].?
+				if is_darkness_group {
+					// fmt.println("Rendering darkness group")
+				}
 				for sprite_group_sprite in sprite_group.sprites {
 					render_sprite(position, sprite_group_sprite)
 				}
@@ -218,21 +224,27 @@ update :: proc() {
 render_sprite :: proc(position: raylib.Vector3, sprite: component.Sprite) -> (did_render: bool) {
 	sprite_position := raylib.Vector2{position[0], position[1]} + sprite.dst_offset
 
-	found_texture: Maybe(raylib.Texture)
-	switch sprite.texture_id {
-	case texture.Texture_Id.Tile_Map_Packed:
-		found_texture = tile_map_packed_texture
-	case texture.Texture_Id.Missing:
-		found_texture = nil
-	}
-	texture := found_texture.? or_return
-
 	dst_rect := raylib.Rectangle {
 		x      = sprite_position[0],
 		y      = sprite_position[1],
 		width  = sprite.dst_width,
 		height = sprite.dst_height,
 	}
+
+	_ = fmt.printf
+
+	found_texture: Maybe(raylib.Texture)
+	switch sprite.texture_id {
+	case texture.Texture_Id.Tile_Map_Packed:
+		found_texture = tile_map_packed_texture
+	case texture.Texture_Id.Missing:
+		if dim_level, has_dim_level := sprite.dimmed.?; has_dim_level {
+			raylib.DrawRectangleRec(dst_rect, raylib.Color{32, 32, 32, dim_level})
+		}
+		found_texture = nil
+	}
+	texture := found_texture.? or_return
+
 
 	src_rect := raylib.Rectangle {
 		x      = sprite.src_rect.x,
@@ -256,12 +268,6 @@ render_sprite :: proc(position: raylib.Vector3, sprite: component.Sprite) -> (di
 	raylib.DrawTexturePro(texture, src_rect, dst_rect, {0, 0}, 0, raylib.WHITE)
 
 	if dim_level, has_dim_level := sprite.dimmed.?; has_dim_level {
-		if dim_level == 69 {
-			fmt.printf("Found 420 69\n")
-		}
-		// if dim_level == 180 {
-		// 	fmt.printf("Found dimmed tile\n")
-		// }
 		raylib.DrawRectangleRec(dst_rect, raylib.Color{32, 32, 32, dim_level})
 	}
 

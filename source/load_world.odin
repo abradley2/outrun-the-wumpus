@@ -7,6 +7,7 @@ import "./quadtree"
 import "./texture"
 import "./tiled"
 import "core:container/small_array"
+import "core:fmt"
 import "core:log"
 import "core:path/slashpath"
 import "core:strings"
@@ -18,6 +19,7 @@ load_dark_layer :: proc(
 ) -> (
 	dark_tile_quad_tree: ^quadtree.Quad_Tree,
 ) {
+	fmt.printf("Loading dark layer\n")
 	dark_tile_quad_tree = new(quadtree.Quad_Tree)
 	dark_tile_quad_tree^ = quadtree.new_quad_tree(1024)
 
@@ -26,6 +28,8 @@ load_dark_layer :: proc(
 
 	world.position[dark_tile_sprite_group_ref.local_id] = component.Position{0, 0, 99}
 
+	world.is_shadow_layer[dark_tile_sprite_group_ref.local_id] = component.Is_Shadow_Layer{}
+
 	world.sprite_group[dark_tile_sprite_group_ref.local_id] = component.Sprite_Group {
 		sprites = sprite_group,
 	}
@@ -33,14 +37,10 @@ load_dark_layer :: proc(
 	x: f32
 	y: f32
 
+
 	for x < 1024 {
-		defer {
-			x += 16
-		}
+		y = 0
 		for y < 1024 {
-			defer {
-				y += 16
-			}
 			sprite := component.Sprite {
 				texture_id = texture.Texture_Id.Missing,
 				src_rect   = raylib.Rectangle{},
@@ -64,7 +64,9 @@ load_dark_layer :: proc(
 				},
 			)
 
+			y += 16
 		}
+		x += 16
 	}
 
 	return
@@ -76,17 +78,24 @@ load_world :: proc(
 	entity_pool: ^entity.Pool,
 ) -> (
 	static_collisions: ^quadtree.Quad_Tree,
-	sprite_quad_tree: ^quadtree.Quad_Tree,
+	dark_tile_quad_tree: ^quadtree.Quad_Tree,
 	ok: bool,
 ) {
 	static_collisions = new(quadtree.Quad_Tree)
 	static_collisions^ = quadtree.new_quad_tree(1024)
 
-	sprite_quad_tree = new(quadtree.Quad_Tree)
+
+	fmt.printf("Loaded dark layer\n")
+
+	sprite_quad_tree := new(quadtree.Quad_Tree)
 	sprite_quad_tree^ = quadtree.new_quad_tree(1024)
+	_ = sprite_quad_tree
+
 
 	context.allocator = context.temp_allocator
-	ok = _load_world(map_id, world, entity_pool, static_collisions, sprite_quad_tree)
+	ok = _load_world(map_id, world, entity_pool, static_collisions, dark_tile_quad_tree)
+
+	dark_tile_quad_tree = load_dark_layer(world, entity_pool)
 	return
 }
 
@@ -95,7 +104,7 @@ _load_world :: proc(
 	world: ^World,
 	entity_pool: ^entity.Pool,
 	static_collisions: ^quadtree.Quad_Tree,
-	sprite_quad_tree: ^quadtree.Quad_Tree,
+	dark_tile_quad_tree: ^quadtree.Quad_Tree,
 ) -> (
 	ok: bool,
 ) {
@@ -171,7 +180,7 @@ _load_world :: proc(
 	}
 
 	// POPULATE WORLD
-	_populate_world(world, entity_pool, static_collisions, sprite_quad_tree, tile_map, tile_sets)
+	_populate_world(world, entity_pool, static_collisions, tile_map, tile_sets)
 
 	ok = true
 	return
@@ -181,7 +190,6 @@ _populate_world :: proc(
 	world: ^World,
 	entity_pool: ^entity.Pool,
 	static_collisions: ^quadtree.Quad_Tree,
-	sprite_quad_tree: ^quadtree.Quad_Tree,
 	tile_map: ^tiled.Tile_Map,
 	tile_sets: [dynamic]tiled.Tile_Set,
 ) {
@@ -248,7 +256,7 @@ _populate_world :: proc(
 				dst_offset = dst_offset,
 				dst_width  = f32(tile_set.tile_width),
 				dst_height = f32(tile_set.tile_height),
-				dimmed     = 77,
+				dimmed     = 0,
 			}
 
 			did_spawn := entity.check_spawn(
@@ -283,19 +291,6 @@ _populate_world :: proc(
 					quadtree.insert_into_quad_tree(static_collisions, static_collision_box)
 				}
 			}
-
-			quadtree.insert_into_quad_tree(
-				sprite_quad_tree,
-				quadtree.Box {
-					position = raylib.Vector2{layer_position[0], layer_position[1]} +
-					raylib.Vector2{dst_offset[0], dst_offset[1]},
-					w = sprite.dst_width,
-					h = sprite.dst_height,
-					is_collision = is_collision,
-					sprite_group_ref = sprite_group.sprites,
-					sprite_idx = len(sprite_group.sprites) - 1,
-				},
-			)
 		}
 	}
 }

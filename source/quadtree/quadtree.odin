@@ -19,13 +19,27 @@ Box :: struct {
 	sprite_idx:       int,
 }
 
-collides_with_any :: proc(a: Box, boxes: []Box) -> bool {
+get_collisions_for :: proc(
+	tree: ^Quad_Tree,
+	box_pool: ^[dynamic]Box,
+	box: Box,
+) -> small_array.Small_Array(64, Box) {
+	resize(box_pool, 0)
+	query_nearby_boxes(tree, box_pool, box)
+	return collides_with_any(box, box_pool[:])
+}
+
+collides_with_any :: proc(a: Box, boxes: []Box) -> small_array.Small_Array(64, Box) {
+	results: small_array.Small_Array(64, Box)
 	for box in boxes {
 		if collides_with(a, box) {
-			return true
+			if small_array.len(results) == 64 {
+				break
+			}
+			small_array.append(&results, box)
 		}
 	}
-	return false
+	return results
 }
 
 collides_with :: proc(a: Box, b: Box) -> bool {
@@ -52,6 +66,7 @@ Quad_Tree :: union {
 	Quad,
 	Leaf,
 }
+
 
 query_nearby_boxes :: proc(tree: ^Quad_Tree, results: ^[dynamic]Box, src_box: Box) {
 	stack: small_array.Small_Array(64, ^Quad_Tree)
