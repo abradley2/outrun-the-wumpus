@@ -57,7 +57,6 @@ illuminate_squares :: proc(
 	collision_quad_tree: ^quadtree.Quad_Tree,
 	shadow_quad_tree: ^quadtree.Quad_Tree,
 ) {
-
 	small_light_source_box := quadtree.Box {
 		position = light_source.position,
 		w        = 16,

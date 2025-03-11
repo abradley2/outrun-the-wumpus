@@ -3,7 +3,8 @@ package pathfinding
 import "../component"
 import "../quadtree"
 
-_h :: proc() -> int {
+_h :: proc(pos: component.Position) -> int {
+	_ = pos
 	return 1
 }
 
@@ -12,6 +13,27 @@ a_star :: proc(
 	goal: component.Position,
 	static_collisions: ^quadtree.Quad_Tree,
 ) {
+	open_set := make(map[component.Position]bool, allocator = context.temp_allocator)
+
+	came_from := make(
+		map[component.Position]component.Position,
+		allocator = context.temp_allocator,
+	)
+
+	//  For node n, gScore[n] is the currently known cost of the cheapest path from start to n.
+	// default value is Infinity
+	g_score := make(map[component.Position]int, allocator = context.temp_allocator)
+	g_score[start] = 0
+
+	// For node n, fScore[n] := gScore[n] + h(n). fScore[n] represents our current best guess as to
+	// how cheap a path could be from start to finish if it goes through n.
+	//  fScore := map with default value of Infinity
+	//  fScore[start] := h(start)
+	f_score := make(map[component.Position]int, allocator = context.temp_allocator)
+	f_score[start] = _h(start)
+
+	for len(open_set) > 0 {
+	}
 
 }
 
